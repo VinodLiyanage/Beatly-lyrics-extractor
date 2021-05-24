@@ -1,0 +1,39 @@
+{
+    "name": "Beatly",
+    "version": "1.0.0",
+    "description": "co",
+    "manifest_version": 3,
+    "background": {
+      "service_worker": "background.js"
+    },
+    "action": {
+        "default_icon": {                              
+          },
+          "default_title": "Lyrics Finder",      
+          "default_popup": "popup.html"
+    },
+    "content_scripts": [
+      {
+        "matches": ["*://*/*"],
+        "css":["/assets/css/bootstrap.min.css"],
+        "run_at": "document_idle",
+        "js": [
+          "/assets/js/contentScripts/beatlyExtractor.js"
+        ]
+      }
+    ],
+    
+      "permissions": [
+        "storage"
+      ],
+      "host_permissions": [],
+      "icons": {                    
+              
+      },
+      
+      "web_accessible_resources": [
+        {
+          "resources": ["/assets/images/loading.gif", "popup.html"],
+          "matches": ["<all_urls>"]
+        }]
+    }
