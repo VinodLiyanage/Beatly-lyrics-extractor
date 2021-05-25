@@ -35,46 +35,93 @@ function handleWait() {
   };
 }
 
-function lyricsElementFinder() {
+function lyricsElementFinder(parentElement = null) {
   /**
-   * @returns {DOM Element} domNode;
+   * @param {HTMLElement} parentElement - lyrics container element's parent element.
+   * @returns {HTMLElement} lyricsContainer - container of the lyrics.
    */
-  //!need to be updated...
-  // body > div.container.main-page > div > div.col-xs-12.col-lg-8.text-center > div:nth-child(10)
-  const methodOne = () => {
-    const banner = document.getElementById("azmxmbanner");
-    if(!(banner && banner.parentElement)) return;
 
-    const lyricsElementArray = Array.from(
-      banner.parentElement.querySelectorAll("div") || []
-    ).filter(div => {
-        if(div && div.innerHTML) {
-            const re = /<!-- Usage of azlyrics.com content by any third-party lyrics provider is prohibited by our licensing agreement. Sorry about that. -->/gmi;
-            
-            if(re.test(div.innerHTML) || !div.hasAttributes()) {
-                return true;
-            }
-        }  
+  let banner;
+
+  if (parentElement instanceof HTMLElement) {
+    banner = parentElement.querySelector("#azmxmbanner");
+  } else {
+    banner = document.querySelector("#azmxmbanner");
+  }
+
+  if (!(banner instanceof HTMLElement)) return null;
+  if (!(banner && banner.parentElement instanceof HTMLElement)) return null;
+
+  let element = banner.parentElement.querySelector(
+    "div.container.main-page > div > div.col-xs-12.col-lg-8.text-center > div:nth-child(8)"
+  );
+
+  console.log('element', element)
+  if(element instanceof HTMLElement) {
+    console.log('element found in method 0')
+  }
+  
+  // cleaned the elment array. this array only contains banner.parentElement > div elements only.
+
+  const lyricsElementArray = Array.from(
+    banner.parentElement.querySelectorAll("div")
+  ).filter((div) => div.parentElement === banner.parentElement);
+
+  if (!lyricsElementArray.length) return;
+
+  if (!(element instanceof HTMLElement)) {
+    lyricsElementArray.forEach((div, index) => {
+      if (!(div instanceof HTMLElement)) return;
+      if (index === 0) return;
+      if (index === lyricsElementArray.length - 1) return;
+
+      const prevDivElement = lyricsElementArray[index - 1];
+      const nextDivElement = lyricsElementArray[index + 1];
+
+      if (!(prevDivElement instanceof HTMLElement)) return;
+      if (!(nextDivElement instanceof HTMLElement)) return;
+
+      if (prevDivElement.getAttribute("class") === "ringtone") {
+        if (nextDivElement.getAttribute("id") === "azmxmbanner") {
+          console.log("element found on method 1");
+          element = div;
+          return;
+        }
+      }
     });
-    if(lyricsElementArray && lyricsElementArray.length) {
-        const element = lyricsElementArray[0];
-        console.log('element', element)
-        if (element && element.innerText) {
-            if (element.innerText.length) {
-              element.setAttribute("id", "lyrics-container");
-              return element;
-            }
-          }
-    }
-    return null;
-  };
+  }
 
-  return methodOne();
+  if(!(element instanceof HTMLElement)) {
+    lyricsElementArray.forEach((div) => {
+      if (!(div instanceof HTMLElement)) return;
+  
+      if (div && div.innerHTML) {
+        const re =
+          /<!-- Usage of azlyrics.com content by any third-party lyrics provider is prohibited by our licensing agreement. Sorry about that. -->/gim;
+        if (re.test(div.innerHTML) || !div.hasAttributes()) {
+          console.log("element found on method 2");
+          element = div;
+        }
+      }
+    });
+  }
+
+  if (!(element instanceof HTMLElement)) {
+    console.error("element is not a HTML element!");
+    return null;
+  } else {
+    if (element && element.innerText) {
+      if (element.innerText.length) {
+        element.setAttribute("id", "lyrics-container");
+        return element;
+      }
+    }
+  }
 }
 
 function albemListFinder() {
   /**
-   * @returns {DomElement[]} domNodeArray;
+   * @returns {HTMLElement[]} domNodeArray;
    */
   const listAlbumItemArr = [
     ...Array.from(document.querySelectorAll(".list-group-item") || []),
@@ -95,22 +142,19 @@ async function fetchLyricsOnline(url) {
       const tempDiv = document.createElement("div");
       tempDiv.setAttribute("id", "temp-div");
       tempDiv.style.display = "none";
-      tempDiv.innerHTML = textHTML;
-      document.body.appendChild(tempDiv);
-      console.log("done!");
-      const lyricsElement = lyricsElementFinder();
+      tempDiv.insertAdjacentHTML("beforeend", textHTML);
+
+      const lyricsElement = lyricsElementFinder(tempDiv);
       console.log(lyricsElement);
       if (lyricsElement) {
         const text = lyricsElement.innerText || null;
         if (text && text.length) {
-          console.log("song lyrics", text);
+          console.log("song lyrics fetch", text);
           try {
             copyContent(text);
             resolve(text);
           } catch (e) {
             reject(e);
-          } finally {
-            document.body.removeChild(tempDiv);
           }
         }
       }
@@ -158,8 +202,11 @@ function copyContent(text) {
   copyTextToClipboard(text);
 }
 
-function addCopyButton(element, val = null) {
+function addCopyButton(element, { id, url }) {
+  console.log("coy btn");
   if (!element) return;
+  if (!(element instanceof HTMLElement)) return;
+  if (!id && !url) return;
 
   element.style.position = "relative";
   element.classList.add("my-2");
@@ -171,7 +218,13 @@ function addCopyButton(element, val = null) {
   copybtn.style.top = "0";
   copybtn.style.right = "0";
   copybtn.style.zIndex = "1000";
-  copybtn.dataset.val = val;
+
+  if (url && url.length) {
+    copybtn.dataset.url = url;
+  }
+  if (id && id.length) {
+    copybtn.dataset.id = id;
+  }
 
   try {
     element.insertBefore(copybtn, element.firstChild);
@@ -181,39 +234,49 @@ function addCopyButton(element, val = null) {
   }
 }
 
-function buttonListener() {
-  const handleClick = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    try {
-      const val = e.target.dataset.val;
-      if (val && val.length) {
-        await fetchLyricsOnline(val);
-      } else {
-        const lyricsElement = lyricsElementFinder();
-        if (lyricsElement) {
-          const text = lyricsElement.innerText || null;
-          if (text && text.length) {
-            console.log("song lyrics", text);
-            try {
-              copyContent(text);
-            } catch (e) {
-              null;
-            }
+async function handleButtonClick(e) {
+  e.preventDefault();
+  e.stopPropagation();
+
+  try {
+    const id = e.target.dataset.id;
+    const url = e.target.dataset.url;
+
+    if (!url && !id) return;
+
+    if (url && url.length) {
+      await fetchLyricsOnline(url);
+    }
+    if (id && id.length) {
+      const lyricsElement = document.getElementById(id);
+
+      if (lyricsElement instanceof HTMLElement) {
+        const text = lyricsElement.innerText || null;
+
+        if (text && text.length) {
+          console.log("song lyrics local", text);
+          try {
+            copyContent(text);
+          } catch (e) {
+            null;
           }
         }
       }
-    } catch (e) {
-      null;
     }
-  };
+  } catch (e) {
+    null;
+  }
+}
 
+function buttonListener() {
   const copyBtnArray = Array.from(document.querySelectorAll(".copy-btn"));
+  const hw = handleWait();
   copyBtnArray.forEach((btn) => {
+    if (!(btn instanceof HTMLElement)) return;
+
     btn.addEventListener("click", async (e) => {
-      const hw = handleWait();
       hw.addWait(btn);
-      await handleClick(e);
+      await handleButtonClick(e);
       hw.removeWait(btn);
     });
   });
@@ -221,31 +284,46 @@ function buttonListener() {
 
 (() => {
   console.log("added");
+
+  /**
+   ** find the container element of the lyrics
+   * @returns {HTMLElement}
+   */
+
   const lyricsElement = lyricsElementFinder();
+
+  /**
+   ** find the containers (array) of the anchor tag that contains the lyrics page url (href)
+   *  @returns {HTMLElement[]}
+   */
+
   const listAlbumItemArr = albemListFinder();
 
-  if (lyricsElement) {
-    addCopyButton(lyricsElement);
+  if (lyricsElement instanceof HTMLElement) {
+    const id = lyricsElement.hasAttribute("id")
+      ? lyricsElement.getAttribute("id")
+      : null;
+    addCopyButton(lyricsElement, { id, url: null });
   }
 
   if (listAlbumItemArr && listAlbumItemArr.length) {
     listAlbumItemArr
       .filter((listAlbumItem) => {
-        return listAlbumItem;
+        return listAlbumItem instanceof HTMLElement;
       })
       .forEach((listAlbumItem) => {
-        let val = null;
-        if (listAlbumItem && listAlbumItem.href) {
-          val = listAlbumItem.href;
+        let url = null;
+        if (listAlbumItem.hasAttribute("href")) {
+          url = listAlbumItem.href;
         } else {
           const anchor = listAlbumItem.querySelector("a");
-          if (anchor && anchor.href) {
-            val = anchor.href;
+          if (anchor instanceof HTMLElement && anchor.hasAttribute("href")) {
+            url = anchor.href;
           } else {
             return;
           }
         }
-        addCopyButton(listAlbumItem, val);
+        addCopyButton(listAlbumItem, { id: null, url });
       });
   }
 
