@@ -1,32 +1,71 @@
+function alertHandler(type) {
+  const alertSuccess = document.getElementById("alert-success");
+  const alertDanger = document.getElementById("alert-danger");
+
+  switch (type) {
+    case "success":
+      alertSuccess.classList.add("show");
+      break;
+    case "danger":
+      alertDanger.classList.add("show");
+      break;
+  }
+  setTimeout(() => {
+    if (alertSuccess.classList.contains("show")) {
+      alertSuccess.classList.remove("show");
+    }
+    if (alertDanger.classList.contains("show")) {
+      alertDanger.classList.remove("show");
+    }
+  }, 1000);
+}
+
 function handleWait() {
+  const img = document.createElement("img");
+  img.id = "loading-btn";
+  img.style.width = "30px";
+  img.style.height = "30px";
+  img.style.position = "absolute";
+  img.style.top = "50%";
+  img.style.left = "50%";
+  img.style.transform = "translate(-50%, -50%)";
+
+  try {
+    const imageURL = chrome.runtime.getURL("./assets/images/loading.gif");
+    img.src = imageURL;
+  } catch (e) {
+    null;
+  }
+
   function addWait(btnElement) {
-    const img = document.createElement("img");
-    img.id = "loading-btn";
-    img.style.width = "30px";
-    img.style.height = "30px";
-    img.style.position = "absolute";
-    img.style.top = "50%";
-    img.style.left = "50%";
-    img.style.transform = "translate(-50%, -50%)";
-    const imageURL = chrome.runtime.getURL("/assets/images/loading.gif");
+    if (!(btnElement instanceof HTMLElement)) return;
+
     try {
-      img.src = imageURL;
       if (!btnElement.querySelector("#loading-btn")) {
         btnElement.appendChild(img);
+        btnElement.style.opacity = "0.4";
+        btnElement.style.cursor = "default";
+      } else {
+        return;
       }
     } catch {
       null;
     }
-    btnElement.style.opacity = "0.4";
-    btnElement.style.cursor = "default";
   }
   function removeWait(btnElement) {
+    if (!(btnElement instanceof HTMLElement)) return;
+
     const loadingBtn = btnElement.querySelector("#loading-btn");
     if (loadingBtn) {
-      btnElement.removeChild(loadingBtn);
-
-      btnElement.style.opacity = "unset";
-      btnElement.style.cursor = "unset";
+      try {
+        btnElement.removeChild(loadingBtn);
+        btnElement.style.opacity = "unset";
+        btnElement.style.cursor = "unset";
+      } catch (e) {
+        null;
+      }
+    } else {
+      return;
     }
   }
   return {
@@ -56,11 +95,11 @@ function lyricsElementFinder(parentElement = null) {
     "div.container.main-page > div > div.col-xs-12.col-lg-8.text-center > div:nth-child(8)"
   );
 
-  console.log('element', element)
-  if(element instanceof HTMLElement) {
-    console.log('element found in method 0')
+  console.log("element", element);
+  if (element instanceof HTMLElement) {
+    console.log("element found in method 0");
   }
-  
+
   // cleaned the elment array. this array only contains banner.parentElement > div elements only.
 
   const lyricsElementArray = Array.from(
@@ -91,10 +130,10 @@ function lyricsElementFinder(parentElement = null) {
     });
   }
 
-  if(!(element instanceof HTMLElement)) {
+  if (!(element instanceof HTMLElement)) {
     lyricsElementArray.forEach((div) => {
       if (!(div instanceof HTMLElement)) return;
-  
+
       if (div && div.innerHTML) {
         const re =
           /<!-- Usage of azlyrics.com content by any third-party lyrics provider is prohibited by our licensing agreement. Sorry about that. -->/gim;
@@ -145,16 +184,34 @@ async function fetchLyricsOnline(url) {
       tempDiv.insertAdjacentHTML("beforeend", textHTML);
 
       const lyricsElement = lyricsElementFinder(tempDiv);
-      console.log(lyricsElement);
+
+      if (!(lyricsElement instanceof HTMLElement)) return;
+
       if (lyricsElement) {
         const text = lyricsElement.innerText || null;
         if (text && text.length) {
-          console.log("song lyrics fetch", text);
           try {
-            copyContent(text);
-            resolve(text);
+            try {
+              chrome.storage.local.get("songObject", ({ songObject }) => {
+                let newSongObject = {
+                  [url]: text,
+                };
+                if (songObject) {
+                  newSongObject = {
+                    ...songObject,
+                    ...newSongObject,
+                  };
+                }
+                chrome.storage.local.set({ songObject: newSongObject }, () => {
+                  console.log("added to the sync storage!");
+                  resolve(text);
+                });
+              });
+            } catch (e) {
+              resolve(text);
+            }
           } catch (e) {
-            reject(e);
+            reject(null);
           }
         }
       }
@@ -202,22 +259,34 @@ function copyContent(text) {
   copyTextToClipboard(text);
 }
 
+const copyImageURL = chrome.runtime.getURL("./assets/images/copy.svg");
 function addCopyButton(element, { id, url }) {
   console.log("coy btn");
   if (!element) return;
   if (!(element instanceof HTMLElement)) return;
-  if (!id && !url) return;
+  if (!(id || url)) return;
 
   element.style.position = "relative";
-  element.classList.add("my-2");
+  element.classList.add('my-1')
 
   const copybtn = document.createElement("button");
-  copybtn.classList.add("copy-btn", "btn", "btn-sm", "btn-primary");
-  copybtn.innerText = "copy";
+  copybtn.classList.add("btn", "btn-sm", "btn-primary", 'm-0', 'p-0');
   copybtn.style.position = "absolute";
-  copybtn.style.top = "0";
+  copybtn.style.top = "50%";
   copybtn.style.right = "0";
   copybtn.style.zIndex = "1000";
+  copybtn.style.transform = 'translate(0, -50%)'
+
+  const img = document.createElement("img");
+  try {
+    img.classList.add('copy-btn')
+    img.src = copyImageURL;
+    img.style.width = "24px";
+    img.style.height = "24px";
+  } catch (e) {
+    null;
+  }
+  copybtn.appendChild(img);
 
   if (url && url.length) {
     copybtn.dataset.url = url;
@@ -239,31 +308,42 @@ async function handleButtonClick(e) {
   e.stopPropagation();
 
   try {
-    const id = e.target.dataset.id;
-    const url = e.target.dataset.url;
+    const id = e.target.parentElement.dataset.id;
+    const url = e.target.parentElement.dataset.url;
 
-    if (!url && !id) return;
+    if (!(url || id)) return;
+
+    let text;
 
     if (url && url.length) {
-      await fetchLyricsOnline(url);
+      try {
+        const songObject = await new Promise((resolve) => {
+          chrome.storage.local.get(["songObject"], ({ songObject }) => {
+            resolve(songObject);
+          });
+        });
+        if (typeof songObject === "object" && songObject[url]) {
+          console.log("new url is same as prev url!");
+          text = songObject[url];
+        } else {
+          console.log("not found in sync storage.");
+          text = await fetchLyricsOnline(url);
+        }
+      } catch (e) {
+        console.error(e);
+      }
     }
     if (id && id.length) {
       const lyricsElement = document.getElementById(id);
-
       if (lyricsElement instanceof HTMLElement) {
-        const text = lyricsElement.innerText || null;
-
-        if (text && text.length) {
-          console.log("song lyrics local", text);
-          try {
-            copyContent(text);
-          } catch (e) {
-            null;
-          }
-        }
+        text = lyricsElement.innerText || null;
       }
     }
+    console.log("song lyrics", text);
+    copyContent(text);
+    alertHandler("success");
   } catch (e) {
+    alertHandler("danger");
     null;
   }
 }
@@ -275,15 +355,21 @@ function buttonListener() {
     if (!(btn instanceof HTMLElement)) return;
 
     btn.addEventListener("click", async (e) => {
-      hw.addWait(btn);
+      hw.addWait(btn.parentElement);
       await handleButtonClick(e);
-      hw.removeWait(btn);
-    });
+      hw.removeWait(btn.parentElement);
+    }, false);
   });
 }
 
 (() => {
   console.log("added");
+
+  try {
+    chrome.storage.local.clear();
+  } catch (e) {
+    null;
+  }
 
   /**
    ** find the container element of the lyrics

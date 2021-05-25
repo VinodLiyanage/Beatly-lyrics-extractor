@@ -1,39 +1,47 @@
 {
-    "name": "Beatly",
+    "name": "Beatly lyrics extractor",
     "version": "1.0.0",
-    "description": "co",
+    "description": "Extract song lyrics from www.azlyrics.com",
     "manifest_version": 3,
     "background": {
       "service_worker": "background.js"
     },
     "action": {
-        "default_icon": {                              
-          },
-          "default_title": "Lyrics Finder",      
-          "default_popup": "popup.html"
+      "default_icon": {   
+        "16":"/assets/images/logo.png",
+        "32":"/assets/images/logo.png",
+        "48":"/assets/images/logo.png",
+        "128":"/assets/images/logo.png"                    
+      },
+      "default_title": "Beatly lyrics extractor"
+
     },
     "content_scripts": [
       {
-        "matches": ["*://*/*"],
-        "css":["/assets/css/bootstrap.min.css"],
+        "matches": ["*://*.azlyrics.com/*"],
+        "css":["/assets/css/alerts.css", "/assets/css/bootstrap.min.css"],
         "run_at": "document_idle",
         "js": [
+           "/assets/js/contentScripts/alerts.js",
           "/assets/js/contentScripts/beatlyExtractor.js"
         ]
       }
     ],
     
       "permissions": [
+        "tabs",
         "storage"
       ],
-      "host_permissions": [],
       "icons": {                    
-              
+        "16":"/assets/images/logo.png",
+        "32":"/assets/images/logo.png",
+        "48":"/assets/images/logo.png",
+        "128":"/assets/images/logo.png"
       },
       
       "web_accessible_resources": [
         {
-          "resources": ["/assets/images/loading.gif", "popup.html"],
-          "matches": ["<all_urls>"]
+          "resources": ["/assets/images/copy.svg", "/assets/images/loading.gif"],
+          "matches": ["*://*.azlyrics.com/*"]
         }]
     }
