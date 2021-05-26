@@ -19,10 +19,9 @@
     "content_scripts": [
       {
         "matches": ["*://*.azlyrics.com/*"],
-        "css":["/assets/css/alerts.css", "/assets/css/bootstrap.min.css"],
+        "css":["/assets/css/bootstrap.min.css"],
         "run_at": "document_idle",
         "js": [
-           "/assets/js/contentScripts/alerts.js",
           "/assets/js/contentScripts/beatlyExtractor.js"
         ]
       }
