@@ -22,7 +22,7 @@
         "css":["/assets/css/bootstrap.min.css"],
         "run_at": "document_idle",
         "js": [
-          "/assets/js/contentScripts/beatlyExtractor.js"
+          "/assets/js/contentScripts/extractor.js"
         ]
       }
     ],

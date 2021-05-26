@@ -1,8 +1,16 @@
+/***********************************************************************
+  
+  https://github.com/VinodLiyanage/Beatly-lyrics-extractor
+  -------------------------------- (C) ---------------------------------
+                           Author: Vinod Liyanage
+                         <vinodsliyanage@gmail.com>
+************************************************************************/
+
+
 async function fetchLyrics(url) {
     try {
         return fetch(url).then((res) => res.text());
     } catch (e) {
-        // console.error(e)
         return null;
     }
  

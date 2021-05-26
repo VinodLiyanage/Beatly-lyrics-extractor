@@ -1,3 +1,11 @@
+/***********************************************************************
+  
+  https://github.com/VinodLiyanage/Beatly-lyrics-extractor
+  -------------------------------- (C) ---------------------------------
+                           Author: Vinod Liyanage
+                         <vinodsliyanage@gmail.com>
+************************************************************************/
+
 function alertHandler(type, message = null) {
   const alertSuccess = document.getElementById("alert-success");
   const alertDanger = document.getElementById("alert-danger");
@@ -104,10 +112,6 @@ function lyricsElementFinder(parentElement = null) {
     "div.container.main-page > div > div.col-xs-12.col-lg-8.text-center > div:nth-child(8)"
   );
 
-  //checking if the element was found or not.
-  if (element instanceof HTMLElement) {
-    console.log("element found in method 1");
-  }
 
   // cleaned the elment array. this array only contains banner.parentElement > div elements only.
 
@@ -137,7 +141,7 @@ function lyricsElementFinder(parentElement = null) {
 
       if (prevDivElement.getAttribute("class") === "ringtone") {
         if (nextDivElement.getAttribute("id") === "azmxmbanner") {
-          console.log("element found on method 2");
+        
           element = div;
           return;
         }
@@ -154,7 +158,7 @@ function lyricsElementFinder(parentElement = null) {
         const re =
           /<!-- Usage of azlyrics.com content by any third-party lyrics provider is prohibited by our licensing agreement. Sorry about that. -->/gim;
         if (re.test(div.innerHTML) || !div.hasAttributes()) {
-          console.log("element found on method 3");
+          
           element = div;
         }
       }
@@ -162,7 +166,6 @@ function lyricsElementFinder(parentElement = null) {
   }
 
   if (!(element instanceof HTMLElement)) {
-    console.error("element not found or the element is not a HTML element!");
     return null;
   } else {
     if (element && element.innerText) {
@@ -197,10 +200,10 @@ function albemListFindFromSearchResults() {
 
   const urlRe = /https?:\/\/search\.azlyrics\.com/gim;
   if (!urlRe.test(currentUrl)) {
-    console.log("you are not in search result page");
+  
     return null;
   } else {
-    console.log("you are in a song search page");
+    null;
   }
 
   const searchResultContainer = document.querySelector(".container.main-page");
@@ -237,7 +240,7 @@ let copyImageURL = null;
 try {
   copyImageURL = chrome.runtime.getURL("./assets/images/copy.svg");
 } catch (e) {
-  console.log(e);
+  null
 }
 
 function addCopyButton(element, { id, url }) {
@@ -303,7 +306,7 @@ function addCopyButton(element, { id, url }) {
       element.insertBefore(copybtn, element.firstChild);
     }
   } catch (e) {
-    console.error(e);
+    null
   }
 }
 
@@ -366,20 +369,20 @@ async function handleButtonClick(e) {
           });
         });
         if (typeof songObject === "object" && songObject[url]) {
-          console.log("new url is same as prev url!");
+          
           text = songObject[url];
         } else {
-          console.log("not found in sync storage.");
+         
           text = await fetchLyricsOnline(url);
         }
       } catch (e) {
-        console.error(e);
+        null;
       }
     }
 
     if (text && text.length) {
       text = text.trim();
-      console.log("song lyrics", text);
+     
       copyContent(text);
       alertHandler("success");
     }
@@ -392,10 +395,10 @@ async function handleButtonClick(e) {
 async function fetchLyricsOnline(url) {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage({ url }, (response) => {
-      if(!response || typeof response !== 'object') {
+      if (!response || typeof response !== "object") {
         return;
       }
-      const textHTML = response.textHTML
+      const textHTML = response.textHTML;
 
       if (!(textHTML && textHTML.length)) return;
 
@@ -421,7 +424,7 @@ async function fetchLyricsOnline(url) {
                 };
               }
               chrome.storage.local.set({ songObject: newSongObject }, () => {
-                console.log("added to the sync storage!");
+                
                 resolve(text);
               });
             });
@@ -503,11 +506,10 @@ function copyContent(text) {
 })();
 
 (() => {
-  console.log("added");
 
   try {
     chrome.storage.local.clear();
-    console.log("stoage cleared");
+  
   } catch (e) {
     null;
   }
@@ -518,17 +520,17 @@ function copyContent(text) {
    */
 
   const lyricsElement = lyricsElementFinder();
-  console.log("lyricsElement", lyricsElement);
+  
 
   /**
    ** find the containers (array) of the anchor tag that contains the lyrics page url (href)
    *  @returns {HTMLElement[]}
    */
   const listAlbumItemArr = albemListFinder();
-  console.log("listAlbumItemArr", listAlbumItemArr);
+ 
 
   const searchResultArr = albemListFindFromSearchResults();
-  console.log("searchResultArr", searchResultArr);
+ 
 
   let combinedItemArr = [];
   if (listAlbumItemArr && listAlbumItemArr.length) {
