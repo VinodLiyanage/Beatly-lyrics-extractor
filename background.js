@@ -3,7 +3,7 @@
   https://github.com/VinodLiyanage/Beatly-lyrics-extractor
   -------------------------------- (C) ---------------------------------
                            Author: Vinod Liyanage
-                         <vinodsliyanage@gmail.com>
+
 ************************************************************************/
 
 
